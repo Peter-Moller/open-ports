@@ -306,7 +306,7 @@ if [ "$OS" = "Darwin" ]; then
   IP_CACHE="/Library/cs.lth.se/ip_cache.txt"
   # GeoLookupDir is a dir where the geo lookup is stored
   GeoLookupDir="/Library/cs.lth.se/GeoLookup"
-  BINDIR="/usr/bin"
+  BINDIR="/usr/local/bin"
   DEFAULT_INTERFACE="$(route get www.lu.se | grep interface | awk '{ print $2 }')"
   MY_IP_ADDRESS="$(ifconfig $DEFAULT_INTERFACE | grep "inet " | awk '{ print $2 }')"
   #DOMAIN="`ipconfig getpacket en0 | grep 'domain_name (string)' | awk '{ print $3 }'`"
@@ -319,7 +319,7 @@ elif [ "$OS" = "Linux" ]; then
   IP_CACHE="/usr/share/cs.lth.se/ip_cache.txt"
   # GeoLookup is a dir where the geo lookup is stored
   GeoLookupDir="/usr/share/cs.lth.se/GeoLookup"
-  BINDIR="/usr/bin"
+  BINDIR="/usr/local/bin"
   DEFAULT_INTERFACE="$(/sbin/route | grep "^default" | awk '{ print $NF }')"
   MY_IP_ADDRESS="$(/sbin/ifconfig $DEFAULT_INTERFACE | grep "inet " | awk '{ print $2 }' | cut -d: -f2)"
   DOMAIN="$(dig +search +short -x $MY_IP_ADDRESS | cut -d\. -f2-8 | sed 's/\.$//g')"
