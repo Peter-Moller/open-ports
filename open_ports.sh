@@ -96,7 +96,7 @@ function PerformGeoLookup ()
     IP_to_check="$1"
     if [ -z "$(echo $IP_to_check | sed 's/[0-9\.]//g')" ]; then
       Rad="$(curl -s "$GeoLookupURL$IP_to_check&api_key=$GeoLookupKey")"
-      [ "$debug" = "t" ] && echo "$(date +%F" "%T); #83; $$; User=\"$USER\"; PerformGeoLookup, IP_to_check=\"$IP_to_check\", Rad=\"$Rad\"" >> $IP_loggfile
+      [ "$debug" = "t" ] && echo "$(date +%F" "%T); #99; $$; User=\"$USER\"; PerformGeoLookup, IP_to_check=\"$IP_to_check\", Rad=\"$Rad\"" >> $IP_loggfile
       # -> Rad='{"address":"78.69.30.61","country":"SE","stateprov":"Stockholm County","city":"Farsta"}'
       # Simple sanity check: count the number of qoutation marks (should be 16)
       if [ "$(echo $Rad | grep -o '"' | wc -w | awk '{print $1}')" -eq 16 ]; then
@@ -132,7 +132,7 @@ function GetCityCountry()
     City="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f1 | native2ascii -encoding UTF-8 -reverse)"
     Country="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f2)"
     # FUTURE FEATURE: INCREASE COUNTER
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #119; $$; User=\"$USER\"; GetCityCountry ($IP, City=\"$City\", Country=\"$Country\")" >> $IP_loggfile
+    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #135; $$; User=\"$USER\"; GetCityCountry ($IP, City=\"$City\", Country=\"$Country\")" >> $IP_loggfile
   else
     PerformGeoLookup $IP
   fi
@@ -203,11 +203,16 @@ done
 
 
 # Check for update
+# We come here when the script is older than 7 days 
+# or
+# from the function “UpdateScript”
+# 
+# If no new update is available, the script is touched (to postpone any new check for a week)
 CheckForUpdate() {
   NewScriptAvailable=f
   # First, download the script from the server
-  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName" http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/"$ScriptName" 2>/dev/null
-  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName".sha1 http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/"$ScriptName".sha1 2>/dev/null
+  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName" "$OpenPortsURL"/"$ScriptName" 2>/dev/null
+  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName".sha1 "$OpenPortsURL"/"$ScriptName".sha1 2>/dev/null
   ERR=$?
   if [ "$ERR" -ne 0 ] ; then
     case "$ERR" in
@@ -215,7 +220,7 @@ CheckForUpdate() {
       7) echo "Error: unable to connect to host";;
       22) echo "Error fetching http-page (error code 4nn or 5nn)";;
     esac
-    echo "The file \"$ScriptName\" could not be fetched from \"http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/$ScriptName\""
+    echo "The file \"$ScriptName\" could not be fetched from \"$OpenPortsURL/$ScriptName\""
     UpdateMessage="{ESC}${BlackBack};${RedFont}mCould not check for new version of \"$ScriptName\" (network error)\n\n"
     #echo "Exiting! Fix yourself..."
     #exit 1
@@ -238,6 +243,8 @@ CheckForUpdate() {
 
 
 # Update [and quit]
+# We come here on a direct request
+# If there is no newer script, the present one is touched so that the next check is done in a week from now
 UpdateScript() {
   CheckForUpdate
   if [ "$CheckSumError" = "t" ]; then
@@ -255,7 +262,7 @@ UpdateScript() {
 
     # Send a signal that someone has updated the script
     # This is only to give me feedback that someone is actually using this. I will *not* use the data in any way nor give it away or sell it!
-    curl -s -f -e "$ScriptName ver:$VER" -o /dev/null http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/updated 2>/dev/null
+    curl -s -f -e "$ScriptName ver:$VER" -o /dev/null "$OpenPortsURL"/updated 2>/dev/null
 
     exit 0
   else
@@ -321,20 +328,18 @@ if [ "$OS" = "Darwin" ]; then
   IP_CACHE="/Library/cs.lth.se/ip_cache.txt"
   # GeoLookupDir is a dir where the geo lookup is stored
   GeoLookupDir="/Library/cs.lth.se/GeoLookup"
-  BINDIR="/usr/local/bin"
   DEFAULT_INTERFACE="$(route get www.lu.se | grep interface | awk '{ print $2 }')"
   MY_IP_ADDRESS="$(ifconfig $DEFAULT_INTERFACE | grep "inet " | awk '{ print $2 }')"
   #DOMAIN="`ipconfig getpacket en0 | grep 'domain_name (string)' | awk '{ print $3 }'`"
   DOMAIN="$(hostname | cut -d\. -f2-7)"
   MTIME60m="-mtime -60m"
-  MTIME120m="-mtime +120m"
+  MTIME120m="-mtime -120m"
   MTIME7d="-mtime -7d"
 elif [ "$OS" = "Linux" ]; then
   PREFIX="/usr/share/cs.lth.se/OpenPorts"
   IP_CACHE="/usr/share/cs.lth.se/ip_cache.txt"
   # GeoLookup is a dir where the geo lookup is stored
   GeoLookupDir="/usr/share/cs.lth.se/GeoLookup"
-  BINDIR="/usr/local/bin"
   DEFAULT_INTERFACE="$(/sbin/route | grep "^default" | awk '{ print $NF }')"
   MY_IP_ADDRESS="$(/sbin/ifconfig $DEFAULT_INTERFACE | grep "inet " | awk '{ print $2 }' | cut -d: -f2)"
   DOMAIN="$(dig +search +short -x $MY_IP_ADDRESS | cut -d\. -f2-8 | sed 's/\.$//g')"
@@ -342,6 +347,10 @@ elif [ "$OS" = "Linux" ]; then
   MTIME120m="-mmin +120"
   MTIME7d="-mtime -7"
 fi
+# BINDIR is where open_ports.sh should be
+BINDIR="/usr/local/bin"
+# OpenPortURL is where open_ports.sh and Countries.txt resides
+OpenPortsURL="http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts"
 # NAT has content if we are on a private net (^192.168.|^172.16.|^10.) and empty otherwise
 NAT="$(echo $MY_IP_ADDRESS | egrep "^192.168.|^172.16.|^10.")"
 # ScriptName is simply the name of the script...
@@ -418,9 +427,14 @@ elif [ -x /usr/bin/lsof ]; then
 fi
 
 
-# <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+# =================================================================================================================
+# =================================================================================================================
+# ================================  D A T A   I S   G E N E R A T E D   H E R E  ==================================
+# =================================================================================================================
+# =================================================================================================================
 #
 # Create in-data (if run through launchd, $USER = nil or root) and then stop
+#
 if [ "$USER" = "root" -o -z "$USER" ]; then
   if [ -z "$DEFAULT_INTERFACE" ] ; then
     echo "You have no IP-address. Exiting"
@@ -429,13 +443,14 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
 
   # If this is an update run("open_ports.sh -u" and thus fetch_new=t), update!
   if [ "$fetch_new" = "t" ]; then
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #369; $$; UpdateScript" >> $IP_loggfile
+    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #446; $$; UpdateScript" >> $IP_loggfile
     UpdateScript
   fi
 
   # If the script is too old, check for update
+  # Question 2015-09-18: why is this here at all? This check is also performed in the user section below! /Peter Möller
   if [ -z "$(find $BINDIR/open_ports.sh -type f ${MTIME7d} 2> /dev/null)" ]; then
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #375; $$; CheckForUpdate" >> $IP_loggfile
+    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #453; $$; CheckForUpdate" >> $IP_loggfile
     CheckForUpdate
   fi
 
@@ -461,7 +476,7 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     #SlaskExtern="$(curl http://tejji.com/ip/my-ip-address.aspx 2> /dev/null | grep -A 1 '<div class="ip_address">' | tail -1 | sed -E 's/<[/]?span[^>]*>//g' | awk '{print $1}' | tr -d '\r\n')"
     # SlaskExtern replaced with simplier call thanks to great feedback from a User op open_ports! :-) I keep the old function for future reference.
     SlaskExtern="$(curl http://ipecho.net/plain 2> /dev/null)"
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #399; $$; User=\"$USER\"; curl to tejji for external address" >> $IP_loggfile
+    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #479; $$; User=\"$USER\"; curl to ipecho.net for external address" >> $IP_loggfile
     # Check to see if this is an IP-address (it should be an empty string after sed if it is)
     if [ -z "$(echo $SlaskExtern | sed 's/[0-9\.]//g')" ]; then
       # If it's different from the stored one; we have moved and need to update $EXTERN
@@ -570,8 +585,8 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   # Make sure the Countries-file exist. Fetch it otherwise
   # This can probably be removed in 2015
   if [ ! -f "$CountryList" ]; then
-      curl -s -f -e "$ScriptName ver:$VER" -o /tmp/Countries.txt http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/Countries.txt 2>/dev/null
-      curl -s -f -e "$ScriptName ver:$VER" -o /tmp/Countries.txt.sha1 http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/Countries.txt.sha1 2>/dev/null
+      curl -s -f -e "$ScriptName ver:$VER" -o /tmp/Countries.txt "$OpenPortsURL"/Countries.txt 2>/dev/null
+      curl -s -f -e "$ScriptName ver:$VER" -o /tmp/Countries.txt.sha1 "$OpenPortsURL"/Countries.txt.sha1 2>/dev/null
       ERR=$?
     if [ "$ERR" -eq 0 ] ; then
       if [ "$(openssl sha1 /tmp/Countries.txt | awk '{ print $2 }')" = "$(less /tmp/Countries.txt.sha1)" ]; then
@@ -592,9 +607,15 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   
   exit 0
 fi
-# End of data generating part of the script that is run by root
-# Everything downwards is run by the user
-# <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+# =================================================================================================================
+# =================================================================================================================
+# ===============================  E N D   O F  D A T A    G E N E R A T I O N    =================================
+# =================================================================================================================
+# =================================================================================================================
+#
+#
+# Everything below is run by the user
+
 
 # If the script is too old, check for update
 if [ -z "$(find $BINDIR/open_ports.sh -type f ${MTIME7d} 2> /dev/null)" ]; then
@@ -694,6 +715,7 @@ elif [ "$OS" = "Linux" ]; then
 fi
 
 
+# 
 # Print the head
 
 # First, print if there is an update for the script available
@@ -753,7 +775,7 @@ do
     exec 6<"$FILE6"
   fi
 
-
+  # Prepare the date/time-string. Example: “18 Sep 10:29”
   [[ "$OS" = "Darwin" ]] && DATE=$(ls -ls $(dirname "$FILE4"/ip"$i".txt) | awk '{ print $7" "$8" "$9 }')
   [[ "$OS" = "Linux" ]] && DATE=$(ls -ls --time-style=+%Y-%m-%d\ %H:%M $(dirname "$FILE4"/ip"$i".txt) | awk '{ print $7" "$8 }')
   printf "${ESC}${BoldFace}mEstablished IPv$i-connections:$Reset ($DATE)    $(if [ "$i" = "4" ]; then printf "${ESC}${ItalicFace}m(Explanation: Normal$Reset, ${ESC}${GreenFont};${ItalicFace}mSafe protocol$Reset, ${ESC}${CyanFont};${ItalicFace}mAmbiguos DNS$Reset, ${ESC}${RedFont};${ItalicFace}mNo DNS-name$Reset, ${ESC}${RedBack};${WhiteFont};${ItalicFace}mUser is root$Reset${ESC}${ItalicFace}m)$Reset"; fi)\n"
@@ -802,8 +824,6 @@ do
         # (DIRT REMOVED) VERY DIRTY: "$(echo $IP | cut -d: -f1)"
         if [ -r "${GeoLookupDir}/${IP}.txt" ]; then
           GetCityCountry $IP
-#        if [ -r "${GeoLookupDir}/"$(echo $IP | cut -d: -f1)".txt" ]; then
-#          GetCityCountry "$(echo $IP | cut -d: -f1)"
         else
           if [ "$IP" = "127.0.0.1" ]; then
             if [ -n "$NAT" ]; then
