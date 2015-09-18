@@ -43,4 +43,6 @@ More in details:
 10. Print the LISTEN files
 
 
-When the script has been modified, I (manually) move it to the deployment-server, OpenPortsURL (http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts), and create a sha1-file so that clients may checkget information about a new version being released.
+When the script has been modified, I (manually) move it to the deployment-server, OpenPortsURL 
+(http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts), and create a sha1-file so that clients may 
+get information about a new version being released.
