@@ -5,7 +5,7 @@ Birds eye view of how the script works:
 • When run as any other user, data is presented from those files
 • Optionally, GeoLookup is done from http://api.db-ip.com (requires a free key)
   Result from that is stored on disk to speed up future lookups
-• The external addres is checked with http://ipecho.net
+• The external address is checked with http://ipecho.net
 • IP address (as well as default interface) is checked against www.lu.se
 
 Other features:
@@ -41,3 +41,6 @@ More in details:
  8. Print the head
  9. Print the ESTABLISHED files, IPv4 first, IPv6 next
 10. Print the LISTEN files
+
+
+When the script has been modified, I (manually) move it to the deployment-server, OpenPortsURL (http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts), and create a sha1-file so that clients may checkget information about a new version being released.
