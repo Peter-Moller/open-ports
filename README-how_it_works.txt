@@ -1,0 +1,40 @@
+2015-09-18 / Peter Möller
+
+Birds eye view of how the script works:
+• When run as root, data is generated and stored on disk
+• When run as any other user, data is presented from those files
+• Optionally, GeoLookup is done from http://api.db-ip.com (requires a free key)
+  Result from that is stored on disk to speed up future lookups
+• The external addres is checked with http://ipecho.net
+• IP address (as well as default interface) is checked against www.lu.se
+
+Other features:
+• The external IP-address is checked every hour to see if it has been changed
+• The age of the data files are checked: if they are older than 1 hour, a warnng is printed
+• Once every week the script looks for a new version of itself and notifies the user accordingly
+• Every two hours the checksum of the “lsof” binary is checked to look for intrusions: if it has been changed
+  a warning is printed instead of output
+• On OS X only:
+  - lists all interfaces, in priority order
+  - looks for available software updates every 6 hours
+• When the script has been installed, or updated, a “signal” is send to me (a curl to a specific URL
+  that I check for in the apache-log on the dept. server. This is done mostly out of curiosity and no
+  information is used in any other way)
+
+
+More in details:
+1. Functions
+2. Definitions of variables (I'm not sure if this is the “correct” order, but I'm sure it doesn't matter… :-)
+3. Data generation part
+4. Checks:
+  - is there an update?
+  - is there a STOP-flag (lsof has been changed)? If so, notify user and exit the script
+  - Is there any data file at all? Warn and exit if not
+  - is OS X: check to see if the launchd-part is running. Warn if not
+  - Are the data files older than 1 hour? Warn if so
+  - Do we have an IP address (rather: do we hav a default interface)? Warn otherwise
+5. Find out, and print system information
+6. If OS X: look for software updates
+7. Print the head
+8. Print the ESTABLISHED files, IPv4 first, IPv6 next
+9. Print the LISTEN files
