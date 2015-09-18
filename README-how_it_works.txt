@@ -29,7 +29,7 @@ Operation of the script, in line-order:
  2. Functions
  3. Definitions of variables (I'm unsure if they “should” come before the functions, but I'm pretty sure
     it doesn't matter… :-)
- 4. Data generation part
+ 4. If script is run by “root”, generate data
  5. Checks:
    - is there an update?
    - is there a STOP-flag (lsof has been changed)? If so, notify user and exit the script
