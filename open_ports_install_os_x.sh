@@ -104,7 +104,7 @@ printf " done!\n"
 # Send a signal that someone has installed the script
 # This is only to give me feedback that someone is actually using this
 # I will *not* use the data in any way or give it away!
-curl -s -f -e "$ScriptName" -o /dev/null http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/installed 2>/dev/null
+curl -s -f -e "$ScriptName OS X 10.${SW_VERS}" -o /dev/null http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/installed 2>/dev/null
 
 echo "Done installing base parts of \"$ScriptName\". Now proceeding to install GeekTool"
 echo "(GeekTool is not a part of \"$ScriptName\"; it is used to display the output of the script"
