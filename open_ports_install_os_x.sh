@@ -29,7 +29,7 @@ fi
 
 
 # BINDIR points to the "binary"
-BINDIR="/usr/bin"
+BINDIR="/usr/local/bin"
 # PREFIX points to where all the datafiles are stored
 PREFIX="/Library/cs.lth.se/OpenPorts"
 ## IP_CACHE is a growing list of IP-addresses and their geo location. 
@@ -76,8 +76,8 @@ printf "2. Fetching the main script and the country list..."
 curl -o /tmp/${ScriptName} http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/${ScriptName} 2>/dev/null
 curl -o /tmp/${ScriptName}.sha1 http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/${ScriptName}.sha1 2>/dev/null
 if [ "$(openssl sha1 /tmp/${ScriptName} | awk '{ print $2 }')" = "$(less /tmp/${ScriptName}.sha1)" ]; then
-  mv /tmp/${ScriptName} /usr/bin/${ScriptName}
-  chmod 755 /usr/bin/${ScriptName}
+  mv /tmp/${ScriptName} ${BINDIR}/${ScriptName}
+  chmod 755 ${BINDIR}/${ScriptName}
 else
   echo "Checksum does NOT match!! Installation aborted!"
   exit 1
@@ -120,7 +120,7 @@ if [ -z "$(ls /Library/PreferencePanes/GeekTool.prefPane 2>/dev/null)" -a -z "$(
     hdiutil mount /tmp/GeekTool.dmg
     open /Volumes/GeekTool\ 3/
     echo "GeekTool has been downloaded, but you must install it yourself!"
-  elif [ "$SW_VERS" = "7" -o "$SW_VERS" = "8" -o "$SW_VERS" = "9" ]; then
+  elif [ "$SW_VERS" = "7" -o "$SW_VERS" = "8" -o "$SW_VERS" = "9" -o "$SW_VERS" = "10" -o "$SW_VERS" = "11" ]; then
     echo "GeekTool is available from this address:"
     echo "http://projects.tynsoe.org/en/geektool/download.php"
     echo "Opening this address in a few seconds..."
@@ -140,7 +140,7 @@ echo "\"$ScriptName\" is now running and collect information every two minutes."
 echo "Run the script as an ordinary user to see the data."
 echo
 printf "\e[1;3mLocations:\e[0m\n"
-echo "The script is located in \"/usr/bin\""
+echo "The script is located in \"${BINDIR}\""
 echo "The data files are stored in \"$PREFIX\""
 echo "The launchd-file is \"/Library/LaunchDaemons/se.lth.cs.open_ports.plist\""
 echo "These are the files you need to remove to uninstall!"
