@@ -76,6 +76,7 @@ printf "2. Fetching the main script and the country list..."
 curl -o /tmp/${ScriptName} http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/${ScriptName} 2>/dev/null
 curl -o /tmp/${ScriptName}.sha1 http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/${ScriptName}.sha1 2>/dev/null
 if [ "$(openssl sha1 /tmp/${ScriptName} | awk '{ print $2 }')" = "$(less /tmp/${ScriptName}.sha1)" ]; then
+  mkdir -p /usr/local/bin 2>/dev/null
   mv /tmp/${ScriptName} ${BINDIR}/${ScriptName}
   chmod 755 ${BINDIR}/${ScriptName}
 else
