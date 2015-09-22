@@ -36,18 +36,18 @@ Operation of the script, in line-order:
     - the OS is not either Darwin or Linux
  2. Functions
  3. Definitions of variables (I'm unsure if they “should” come before the functions, but I'm pretty sure it doesn't matter… :-)
- 4. If script is run by “root”, generate data and then exit
+ 4. If script is run by `root`, generate data and then exit
  5. Checks:
      - is there an update?
      - is there a STOP-flag (`lsof` has been changed)? If so, notify user and exit the script
      - Is there any data file at all? Warn and exit if not
-     - Is OS X: check to see if the launchd-part is running. Warn if not
+     - If OS X: check to see if the `launchd`-part is running. Warn if not
      - Are the data files older than 1 hour? Warn if so
-     - Do we have an IP address (rather: do we hav a default interface)? Warn otherwise
+     - Do we have an IP address (rather: do we have a default interface. Check is performed against `www.lu.se`)? Warn otherwise
  6. Find out, and print system information
- 7. If OS X: look for software updates
+ 7. If OS X: look for software updates (this is done every 6 houres; result stored in `/tmp/swu.temp`)
  8. Print the head
- 9. Print the ESTABLISHED files, IPv4 first, IPv6 next
+ 9. Print the ESTABLISHED files (IPv4 first, IPv6 next)
  10. Print the LISTEN files
 
 
