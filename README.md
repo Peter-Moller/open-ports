@@ -32,7 +32,7 @@ Other features:
 Operation of the script, in line-order:
 ----------------------------------------------------
  1. Quit if either:
-    - `open_ports.sh` is running (with the same `UID`)
+    - `open_ports.sh` is running with the same `UID`
     - the OS is not either Darwin or Linux
  2. Functions
  3. Definitions of variables (I'm unsure if they “should” come before the functions, but I'm pretty sure it doesn't matter… :-)
