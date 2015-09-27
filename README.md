@@ -15,7 +15,7 @@ Birds eye view of how the script works:
   * Optionally, GeoLookup is done from http://api.db-ip.com (requires a free key)  
     Result from that is stored on disk to speed up future lookups
   * The external address is checked with http://ipecho.net
-  * IP address (as well as default interface) is checked against `www.lu.se`
+  * IP address (as well as default interface, checked against `www.lu.se`)
 
 Other features:
 ---------------
@@ -26,14 +26,14 @@ Other features:
   * On OS X only:
     * lists all interfaces, in priority order
     * looks for available software updates every 6 hours
-  * When the script has been installed, or updated, a “signal” is send to me (a curl to a specific URL that I check for in the apache-log on the dept. server. This is done mostly out of curiosity and no information is used in any other way)
+  * When the script has been installed, or updated, a “signal” is send to me (a curl to a specific URL that I check for in the apache-log on the dept. server. This is done out of curiosity of how many installs and updates there are, and no information is used in any other way)
 
 
 Operation of the script, in line-order:
 ----------------------------------------------------
  1. Quit if either:
-    - `open_ports.sh` is running with the same `UID`
-    - the OS is not either Darwin or Linux
+    - `open_ports.sh` is already running with the same `$UID`
+    - the OS is not Darwin or Linux
  2. Functions
  3. Definitions of variables (I'm unsure if they “should” come before the functions, but I'm pretty sure it doesn't matter… :-)
  4. If script is run by `root`, generate data and then exit
@@ -43,7 +43,7 @@ Operation of the script, in line-order:
      - Is there any data file at all? Warn and exit if not
      - If OS X: check to see if the `launchd`-part is running. Warn if not
      - Are the data files older than 1 hour? Warn if so
-     - Do we have an IP address (rather: do we have a default interface. Check is performed against `www.lu.se`)? Warn otherwise
+     - Do we have an IP address (rather: do we have a default interface – checked against `www.lu.se`)? Warn otherwise
  6. Find out, and print system information
  7. If OS X: look for software updates (this is done every 6 houres; result stored in `/tmp/swu.temp`)
  8. Print the head
