@@ -548,7 +548,8 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     # - 'com.apple.WebKit.WebContent'
     # - '2BUA8C4S2C.com.agilebits.onepas'
     # - '2BUA8C4S2C.com.'
-    sed -e 's/com.apple.WebKit.[a-zA-Z]* /Webkit\x20(Safari) /' -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -i .bak $FILE4
+    sed -e 's/com.apple.WebKit.[a-zA-Z.0-9]* /Webkit\x20(Safari) /' -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -e 's/com.apple.Safari.[a-zA-Z.0-9]* /WebKit\x20(Safari)/' -i .bak $FILE4
+
 
     # The following line is replaced by the one next below after a bug report from Roman Weber. Have not had time to check i thoroughly, though, so it's still here:
     #$LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | grep -v "\->\[\:\:$MY_IP_ADDRESS\]" | sort -f -k 1,1 -k 2,2 | awk '{ print $1" "$3" "$9 }' | sed -E "s/\ \[::[[:digit:]].*-\>\[::/\ /g" | sed "s/\]:/\ /g" | sort -f | uniq -c > $FILE6
