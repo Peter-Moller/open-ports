@@ -36,7 +36,7 @@
 # 2015-09-16  Moved to GitHub (finally!)
 #
 # Version:
-VER="2.6.1"
+VER="2.6.2"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -542,6 +542,14 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   # lsof +c 0 -i 4 -n | grep EST | grep -v "\->127.0.0.1" | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE4
   if [ "$OS" = "Darwin" ]; then
     $LSOF_PATH/lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE4
+    # “sanitize” the output by replacing long strings with shorter ones. This started in OS X 10.11 “El Capitan”
+    # The following strings are inteded to be cought:
+    # - 'com.apple.WebKit.Networking'
+    # - 'com.apple.WebKit.WebContent'
+    # - '2BUA8C4S2C.com.agilebits.onepas'
+    # - '2BUA8C4S2C.com.'
+    sed -e 's/com.apple.WebKit.[a-zA-Z]* /Webkit\x20(Safari) /' -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -i .bak $FILE4
+
     # The following line is replaced by the one next below after a bug report from Roman Weber. Have not had time to check i thoroughly, though, so it's still here:
     #$LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | grep -v "\->\[\:\:$MY_IP_ADDRESS\]" | sort -f -k 1,1 -k 2,2 | awk '{ print $1" "$3" "$9 }' | sed -E "s/\ \[::[[:digit:]].*-\>\[::/\ /g" | sed "s/\]:/\ /g" | sort -f | uniq -c > $FILE6
     # Something is definetley not right here. Another fix and, I guess, primarily waiting for a couple of 'real' IPv6-catches...
@@ -564,6 +572,8 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   if [ "$OS" = "Darwin" ]; then
     $LSOF_PATH/lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq > /tmp/slask
     $LSOF_PATH/lsof +c 0 -i 6 -n | egrep LISTEN | awk '{ print "- 6 "$1" "$3" "$9 }' | sort -f | sed 's/\ \[.*\]/\ \*/g' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq >> /tmp/slask
+    # Clean '1Password'
+    sed -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -i .bak /tmp/slask
   elif [ "$OS" = "Linux" ]; then
     $LSOF_PATH/lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq > /tmp/slask
     $LSOF_PATH/lsof +c 0 -i 6 -n | egrep LISTEN | awk '{ print "- 6 "$1" "$3" "$9 }' | sort -f | sed 's/\ \[.*\]/\ \*/g' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq >> /tmp/slask
