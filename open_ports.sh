@@ -36,7 +36,7 @@
 # 2015-09-16  Moved to GitHub (finally!)
 #
 # Version:
-VER="2.6"
+VER="2.6.1"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -263,6 +263,21 @@ UpdateScript() {
     # Send a signal that someone has updated the script
     # This is only to give me feedback that someone is actually using this. I will *not* use the data in any way nor give it away or sell it!
     curl -s -f -e "$ScriptName ver:$VER" -o /dev/null "$OpenPortsURL"/updated 2>/dev/null
+    
+    # Also, fix moving the script to /usr/local/bin
+    if [ -n "$(grep "/usr/bin/open_ports.sh" /Library/LaunchDaemons/se.lth.cs.open_ports.plist 2>/dev/null)" ]; then
+      # Edit the plist-file
+      sed -e 's;/usr/bin/;/usr/local/bin/;' -i .bak /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+      # Stop and restart the launchd job
+      /bin/launchctl unload /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+      /bin/launchctl load /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+    fi
+    # Also do this on Linux
+    if [ "$OS" = "Linux" ]; then
+      crontab -l | grep -v "open_ports.sh" > /tmp/CRONFILE
+      echo "*/2 * * * * $BINDIR/open_ports.sh" >> /tmp/CRONFILE
+      crontab < /tmp/CRONFILE
+    fi
 
     exit 0
   else
