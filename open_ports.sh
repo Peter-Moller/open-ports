@@ -36,7 +36,7 @@
 # 2015-09-16  Moved to GitHub (finally!)
 #
 # Version:
-VER="2.6.2"
+VER="2.6.3"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -393,8 +393,8 @@ LAUNCHD_FLAG="$PREFIX"/no_launchd
 # SoftwareUpdate-fil (temporary)
 SoftUpd=/tmp/swu.temp
 # String for printf (used to print ESTABLISHED-connections)
-Formatstring1="%-18s%-15s%-15s%2s%3s%-60s%-20s%-14s"
-Formatstring2="%-18s%-15s%-15s%2s%3s%-60s"
+Formatstring1="%-21s%-15s%-15s%2s%3s%-58s%-20s%-14s"
+Formatstring2="%-21s%-15s%-15s%2s%3s%-58s"
 # String for printf (used to print LISTEN-ports)
 FormatstringListen="%-6s%-6s%-18s%-15s%6s%2s%-17s%-15s"
 # UpdateMessage contains the message of weather an update is available och the checksum-check failed
@@ -544,11 +544,10 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     $LSOF_PATH/lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE4
     # “sanitize” the output by replacing long strings with shorter ones. This started in OS X 10.11 “El Capitan”
     # The following strings are inteded to be cought:
-    # - 'com.apple.WebKit.Networking'
-    # - 'com.apple.WebKit.WebContent'
-    # - '2BUA8C4S2C.com.agilebits.onepas'
-    # - '2BUA8C4S2C.com.'
-    sed -e 's/com.apple.WebKit.[a-zA-Z.0-9]* /Webkit\x20(Safari) /' -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -e 's/com.apple.Safari.[a-zA-Z.0-9]* /WebKit\x20(Safari)/' -i .bak $FILE4
+    # - 'com.apple.WebKit.*'
+    # - 'com.apple.Safari.*'
+    # - '2BUA8C4S2C.com.*'
+    sed -e 's/com.apple.//' -e 's/2BUA8C4S2C.com[a-z.]* /1Password /' -i .bak $FILE4
 
 
     # The following line is replaced by the one next below after a bug report from Roman Weber. Have not had time to check i thoroughly, though, so it's still here:
