@@ -393,8 +393,8 @@ LAUNCHD_FLAG="$PREFIX"/no_launchd
 # SoftwareUpdate-fil (temporary)
 SoftUpd=/tmp/swu.temp
 # String for printf (used to print ESTABLISHED-connections)
-Formatstring1="%-21s%-15s%-15s%2s%3s%-58s%-20s%-14s"
-Formatstring2="%-21s%-15s%-15s%2s%3s%-58s"
+Formatstring1="%-22s%-14s%-15s%2s%3s%-58s%-20s%-14s"
+Formatstring2="%-22s%-14s%-15s%2s%3s%-58s"
 # String for printf (used to print LISTEN-ports)
 FormatstringListen="%-6s%-6s%-18s%-15s%6s%2s%-17s%-15s"
 # UpdateMessage contains the message of weather an update is available och the checksum-check failed
