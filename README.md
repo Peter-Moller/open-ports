@@ -17,6 +17,8 @@ Birds eye view of how the script works:
   * The external address is checked with http://ipecho.net
   * IP address (as well as default interface, checked against `www.lu.se`)
 
+*One clarification: the script **needs** to run as root, or you will only see your own connections and that makes it much less valuable!*
+
 Other features:
 ---------------
   * The external IP-address is checked every hour to see if it has been changed
@@ -27,6 +29,12 @@ Other features:
     * lists all interfaces, in priority order
     * looks for available software updates every 6 hours
   * When the script has been installed, or updated, a “signal” is send to me (a curl to a specific URL that I check for in the apache-log on the dept. server. This is done out of curiosity of how many installs and updates there are, and no information is used in any other way)
+
+Tha basic functionality of the script can be encapsulated in:  
+ESTABLISHED connections (Darwin): `lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c` (for `IPv4`; replace the `4` with a `6` for `IPv6`)
+and  
+LISTEN connections (Darwin): `lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq` (same as above, almost...)  
+For Linux the central lines are almost the same.
 
 
 Operation of the script, in line-order:
