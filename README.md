@@ -3,6 +3,8 @@ open-ports
 
 A bash-script for OS X and Linux detailing the open network connections to and from a computer
 
+![Screendump of open_ports](http://fileadmin.cs.lth.se/cs/Personal/Peter_Moller/scripts/open_ports/open_ports_2.6.3.png)
+
 More information about the script can be found here:
 http://cs.lth.se/peter-moller/script/open-portssh-en/
 
