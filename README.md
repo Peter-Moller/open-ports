@@ -3,7 +3,7 @@ open-ports
 
 A bash-script for OS X and Linux detailing the open network connections to and from a computer
 
-More details about the script can be found here:
+More information about the script can be found here:
 http://cs.lth.se/peter-moller/script/open-portssh-en/
 
 -----
@@ -31,9 +31,10 @@ Other features:
   * When the script has been installed, or updated, a “signal” is send to me (a curl to a specific URL that I check for in the apache-log on the dept. server. This is done out of curiosity of how many installs and updates there are, and no information is used in any other way)
 
 Tha basic functionality of the script can be encapsulated in:  
-ESTABLISHED connections (Darwin): `lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c` (for `IPv4`; replace the `4` with a `6` for `IPv6`)
+ESTABLISHED connections (Darwin, `IPv4`; replace the `4` with a `6` for `IPv6`):  
+`lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c`  
 and  
-LISTEN connections (Darwin): `lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq` (same as above, almost...)  
+LISTEN connections (Darwin, same as above, almost...): `lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq`  
 For Linux the central lines are almost the same.
 
 
