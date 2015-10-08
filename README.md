@@ -32,10 +32,10 @@ Other features:
 
 Tha basic functionality of the script can be encapsulated in:  
 ESTABLISHED connections (Darwin, `IPv4`; replace the `4` with a `6` for `IPv6`):  
-`lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c`  
+`lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed -e 's/\ [[:digit:]].*-\>/\ /g' -e 's/:/\ /g' | sort -f | uniq -c`  
 and  
 LISTEN connections (Darwin, same as above, almost...):  
-`lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed 's/:/\ /g' | sed 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq`  
+`lsof +c 0 -i 4 -n | grep LISTEN | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print "4 - "$1" "$3" "$9 }' | sed -e 's/:/\ /g' -e 's/\ [[:digit:]]\{2,5\}$/\ anonymous_port/g' | uniq`  
 For Linux the central lines are almost the same.
 
 
