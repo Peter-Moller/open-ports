@@ -129,7 +129,7 @@ echo "In order for the geographical lookup to work, you need to get a [free] key
 echo "Once you've gotten that key in your email, you need to store it as \"apidb.key\" in \"$PREFIX\""
 echo "Opening this address in a few seconds..."
 /bin/sleep 5
-open "http://db-ip.com/api/free" &
+xdg-open "http://db-ip.com/api/free" &
 echo
 echo "Please do not forget to upgrade the script once every month or so! (\"open_ports.sh -u\")"
 echo "Also, please feel free to report bugs and email suggestions for improvements!"
