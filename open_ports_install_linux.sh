@@ -99,13 +99,27 @@ fi
 printf " done!\n"
 
 # Fix cron
-printf "2. Fixing crontab for root (crontab runs the script every two minutes.\n"
-printf "   This will NOT mess up previous crontab entries)..."
-crontab -l | grep -v "open_ports.sh" > /tmp/CRONFILE
-echo "*/2 * * * * $BINDIR/open_ports.sh" >> /tmp/CRONFILE
-crontab < /tmp/CRONFILE
-rm /tmp/CRONFILE
-printf " done!\n"
+command -v systemctl >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+  printf "2. Adding systemd unit to run the script every two minutes.\n"
+  cp /home/pmoreau/softwares/open-ports/open-ports.timer /etc/systemd/system/
+  cp /home/pmoreau/softwares/open-ports/open-ports.service /etc/systemd/system/
+  systemctl enable open-ports.timer
+  systemctl start open-ports.timer
+else
+  command -v crontab >/dev/null 2>&1
+  if [ $? -eq 0]; then
+    printf "2. Fixing crontab for root (crontab runs the script every two minutes.\n"
+    printf "   This will NOT mess up previous crontab entries)..."
+    crontab -l | grep -v "open_ports.sh" > /tmp/CRONFILE
+    echo "*/2 * * * * $BINDIR/open_ports.sh" >> /tmp/CRONFILE
+    crontab < /tmp/CRONFILE
+    rm /tmp/CRONFILE
+    printf " done!\n"
+  else
+    echo "systemd nor cron found on your computer: open-ports data won't be updated automatically"
+  fi
+fi
 
 
 # Create the directory for the files and set the access rights

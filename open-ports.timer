@@ -1,0 +1,8 @@
+[Unit]
+Description=Update open-ports' database
+
+[Timer]
+OnCalendar=*-*-* *:0/2
+
+[Install]
+WantedBy=timers.target

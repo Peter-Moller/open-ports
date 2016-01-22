@@ -62,9 +62,15 @@ help() {
   echo "If run by root: datafiles in /Library/cs.lth.se/OpenPorts (Mac) or /usr/share/cs.lth.se/OpenPorts (Linux) are created, but no output."
   echo "If run by any other user: output is displayed based on those datafiles."
   echo
-  echo "This script is supposed to be used in conjunction with a launchd-component, se.lth.cs.open_ports,"
-  echo "that creates the datafiles in /Library/OpenPorts every two minutes. The use of GeekTool to display the result"
-  echo "is also part of the idea behind this script!"
+  if [ "$OS" = "Darwin" ]; then
+    echo "This script is supposed to be used in conjunction with a launchd-component, se.lth.cs.open_ports,"
+    echo "that creates the datafiles in /Library/OpenPorts every two minutes. The use of GeekTool to display the result"
+    echo "is also part of the idea behind this script!"
+  elif [ "$OS" = "Linux" ]; then
+    echo "This script is supposed to be used in conjunction with a cron job or a systemd timer that creates the"
+    echo "datafiles in /usr/share/cs.lth.se/OpenPorts every two minutes. Conky can be used to display the result"
+    echo "of this script!"
+  fi
   exit 0
 }
 
@@ -192,6 +198,22 @@ if [ ! "$OS" = "Darwin" -a ! "$OS" = "Linux" ]; then
   exit 1
 fi
 
+# If it is Linux, figure out whether to use systemd or crontab
+TIMER_METHOD="none"
+if [ "$OS" = "Darwin" ]; then
+  TIMER_METHOD="launchd"
+elif [ "$OS" = "Linux" ]; then
+  command -v systemctl >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    TIMER_METHOD="systemd"
+  else
+    command -v crontab >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      TIMER_METHOD="cron"
+    fi
+  fi
+fi
+
 # Read the parameters:
 while getopts ":hud" opt; do
 case $opt in
@@ -265,18 +287,22 @@ UpdateScript() {
     curl -s -f -e "$ScriptName ver:$VER" -o /dev/null "$OpenPortsURL"/updated 2>/dev/null
     
     # Also, fix moving the script to /usr/local/bin
-    if [ -n "$(grep "/usr/bin/open_ports.sh" /Library/LaunchDaemons/se.lth.cs.open_ports.plist 2>/dev/null)" ]; then
-      # Edit the plist-file
-      sed -e 's;/usr/bin/;/usr/local/bin/;' -i .bak /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-      # Stop and restart the launchd job
-      /bin/launchctl unload /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-      /bin/launchctl load /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-    fi
+    if [ "TIMER_METHOD" = "launchd" ]; then
+      if [ -n "$(grep "/usr/bin/open_ports.sh" /Library/LaunchDaemons/se.lth.cs.open_ports.plist 2>/dev/null)" ]; then
+        # Edit the plist-file
+        sed -e 's;/usr/bin/;/usr/local/bin/;' -i .bak /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+        # Stop and restart the launchd job
+        /bin/launchctl unload /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+        /bin/launchctl load /Library/LaunchDaemons/se.lth.cs.open_ports.plist
+      fi
     # Also do this on Linux
-    if [ "$OS" = "Linux" ]; then
+    elif [ "$TIMER_METHOD" = "cron" ]; then
       crontab -l | grep -v "open_ports.sh" > /tmp/CRONFILE
       echo "*/2 * * * * $BINDIR/open_ports.sh" >> /tmp/CRONFILE
       crontab < /tmp/CRONFILE
+    elif [ "$TIMER_METHOD" = "systemd" ]; then
+      systemctl daemon-reload
+      systemctl restart open-ports.timer
     fi
 
     exit 0
@@ -585,7 +611,7 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   # One can check the IP-address with this sed-line: sed 's/\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}:.\{2,15\}->//g' (possible future development)
 
   # Create a file whose existence tells if the launchd-part of open_ports is running (otherwise warn the user)
-  if [ "$OS" = "Darwin" ]; then
+  if [ "$TIMER_METHOD" = "launchd" ]; then
     if [ -z "`launchctl list | grep 'se.lth.cs.open_ports'`" ]; then
       touch "$LAUNCHD_FLAG"
     else
@@ -670,15 +696,23 @@ if [ ! -f "$FILE4" ]; then
 fi
 
 # Check to see if the launchd-part is running. Warn the user otherwise
- if [ "$OS" = "Darwin" ]; then
+ if [ "$TIMER_METHOD" = "launchd" ]; then
    if [ -f "$LAUNCHD_FLAG" ]; then
    printf "${ESC}${RedFont}mWARNING: The \"launchd\"-component of \"open_ports.sh\" is NOT RUNNING!!!\n\n$Reset"
+   fi
+ elif [ "$TIMER_METHOD" = "systemd" ]; then
+   if [ "$(systemctl is-active open-ports.timer)" != "active" ]; then
+   printf "${ESC}${RedFont}mWARNING: The \"systemd\"-component of \"open_ports.sh\" is NOT RUNNING!!!\n\n$Reset"
    fi
  fi
 
 # Se that the datafiles are created within the last hour. Otherwise tell the user about it!
 if [ -z "$(find $FILE4 -type f ${MTIME60m} 2> /dev/null)" ]; then
- printf "${ESC}${RedFont}mWARNING: The datafile is older than 1 hour; make sure the \"launchd\"-component (\"se.lth.cs.open_ports\", located in \"/Library/LaunchDaemons\")\n$Reset"
+ if [ "$TIMER_METHOD" = "launchd" ]; then
+  printf "${ESC}${RedFont}mWARNING: The datafile is older than 1 hour; make sure the \"launchd\"-component (\"se.lth.cs.open_ports\", located in \"/Library/LaunchDaemons\")\n$Reset"
+ elif [ "$TIMER_METHOD" = "systemd" ]; then
+  printf "${ESC}${RedFont}mWARNING: The datafile is older than 1 hour; make sure the \"systemd\"-component (\"open-ports.timer\", located in \"/etc/systemd/system\")\n$Reset"
+ fi
  printf "${ESC}${RedFont}mis working properly! The information presented here is not current!!$Reset\n\n\n"
 fi
 
