@@ -803,7 +803,7 @@ do
   # Prepare the date/time-string. Example: “18 Sep 10:29”
   [[ "$OS" = "Darwin" ]] && DATE=$(ls -ls $(dirname "$FILE4"/ip"$i".txt) | awk '{ print $7" "$8" "$9 }')
   [[ "$OS" = "Linux" ]] && DATE=$(ls -ls --time-style=+%Y-%m-%d\ %H:%M $(dirname "$FILE4"/ip"$i".txt) | awk '{ print $7" "$8 }')
-  printf "${ESC}${BoldFace}mEstablished IPv$i-connections:$Reset ($DATE)    $(if [ "$i" = "4" ]; then printf "${ESC}${ItalicFace}m(Explanation: Normal$Reset, ${ESC}${GreenFont};${ItalicFace}mSafe protocol$Reset, ${ESC}${CyanFont};${ItalicFace}mAmbiguos DNS$Reset, ${ESC}${RedFont};${ItalicFace}mNo DNS-name$Reset, ${ESC}${RedBack};${WhiteFont};${ItalicFace}mUser is root$Reset${ESC}${ItalicFace}m)$Reset"; fi)\n"
+  printf "${ESC}${BoldFace}mEstablished IPv$i-connections:$Reset ($DATE)    $(if [ "$i" = "4" ]; then printf "${ESC}${ItalicFace}m(Explanation: Normal$Reset, ${ESC}${GreenFont};${ItalicFace}mSafe protocol$Reset, ${ESC}${CyanFont};${ItalicFace}mAmbiguous DNS$Reset, ${ESC}${RedFont};${ItalicFace}mNo DNS-name$Reset, ${ESC}${RedBack};${WhiteFont};${ItalicFace}mUser is root$Reset${ESC}${ItalicFace}m)$Reset"; fi)\n"
   if [ "$IPv6" = "f" -a "$i" -eq 6 ]; then
     printf "${ESC}${ItalicFace};${YellowFont}mIPv6 is not configured$Reset"
   else
