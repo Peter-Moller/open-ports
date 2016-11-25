@@ -173,7 +173,8 @@ function GetDNS()
     HOSTNAME_tmp="$(host -W 2 $IP)"
     ERR="$?"
     if [ ! "$ERR" = "0" ]; then
-      HOSTNAME="$IP could not be looked up! (DNS timeout)"
+      HOSTNAME="$IP (DNS timeout)"
+#      HOSTNAME="$IP could not be looked up! (DNS timeout)"
     else
       HOSTNAME=`echo $HOSTNAME_tmp | awk '{ print $NF }' | sed 's/\.$//g'`
     fi
@@ -580,7 +581,8 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     #$LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | grep -v "\->\[\:\:$MY_IP_ADDRESS\]" | sort -f -k 1,1 -k 2,2 | awk '{ print $1" "$3" "$9 }' | sed -E "s/\ \[::[[:digit:]].*-\>\[::/\ /g" | sed "s/\]:/\ /g" | sort -f | uniq -c > $FILE6
     # Something is definetley not right here. Another fix and, I guess, primarily waiting for a couple of 'real' IPv6-catches...
     #$LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | grep -v "\->\[\:\:$MY_IP_ADDRESS\]" | sort -f -k 1,1 -k 2,2 | awk '{ print $1" "$3" "$9 }' | sed -E "s/\ \[.*-\>\[/\ /g" | sed "s/\]:/\ /g" | sort -f | uniq -c > $FILE6
-    $LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE6
+#    $LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*-\>/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE6
+    $LSOF_PATH/lsof +c 0 -i 6 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed -e 's/ \[[^-]*->/ /g' -e 's/]:/] /g' | sort -f | uniq -c > $FILE6
   elif [ "$OS" = "Linux" ]; then
     $LSOF_PATH/lsof +c 0 -i 4 -n | grep EST | sort -f -k 1,1 | cut -d\( -f1 | awk '{ print $1" "$3" "$9 }' | sed 's/\ [[:digit:]].*->/\ /g' | sed 's/:/\ /g' | sort -f | uniq -c > $FILE4
     # Have not had access to a linux machine running IPv6 so for Linux we simply skip IPv6 for the time being
@@ -624,6 +626,7 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
   if [ "$OS" = "Darwin" ]; then
     if [ -z "`find $SoftUpd -type f -mtime -3h 2> /dev/null`" ]; then
       softwareupdate -l 1> "$SoftUpd" 2> /dev/null
+      chmod 644 "$SoftUpd" 2> /dev/null
     fi
   fi
  
