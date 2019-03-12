@@ -36,7 +36,7 @@
 # 2015-09-16  Moved to GitHub (finally!)
 #
 # Version:
-VER="2.6.3"
+VER="2.7"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -143,6 +143,13 @@ function GetCityCountry()
     PerformGeoLookup $IP
   fi
 }
+
+# Clean the GeoLocate-cache and remove entries older than 4 weeks
+function CleanGeoLocate()
+{
+  find "$GeoLookupDir" -type f -mtime +4w -exec rm -f {} \; 2>/dev/null
+}
+
 
 # Get DNS for $IP
 # Gives: $HOSTNAME
@@ -675,6 +682,8 @@ fi
 # If the script is too old, check for update
 if [ -z "$(find $BINDIR/open_ports.sh -type f ${MTIME7d} 2> /dev/null)" ]; then
   CheckForUpdate
+  # Also, clean the GeoLocate cache for old entries
+  CleanGeoLocate
 fi
 
 
