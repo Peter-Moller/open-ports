@@ -537,7 +537,7 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
           PerformGeoLookup $IP
         fi
         # echo "Add to history file"
-        echo "$IP:$Country:$City:`date +%Y-%m-%d, %H.%M`" >> "$ExternHistory"
+        echo "$IP:$Country:$City:`date +%Y-%m-%d,\ %H.%M`" >> "$ExternHistory"
         echo "$SlaskExtern" > "$EXTERN"
         # Also, create a new file for 127.0.0.1 (since it will be a new one)
         PerformGeoLookup "$(less $EXTERN)"
