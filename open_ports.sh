@@ -378,8 +378,8 @@ if [ "$OS" = "Darwin" ]; then
   # GeoLookupDir is a dir where the geo lookup is stored
   GeoLookupDir="/Library/cs.lth.se/GeoLookup"
   #DEFAULT_INTERFACE="$(route get www.lu.se | grep interface | awk '{ print $2 }')"
-  DEFAULT_INTERFACE="$(/usr/sbin/netstat -f inet -rn | grep "^default" | awk '{print $6}')"
-  MY_IP_ADDRESS="$(ifconfig $DEFAULT_INTERFACE | grep "inet " | awk '{ print $2 }')"
+  DEFAULT_INTERFACE="$(/usr/sbin/netstat -f inet -rn | grep "^default" | head -1 | awk '{print $6}')"
+  MY_IP_ADDRESS="$(ifconfig $DEFAULT_INTERFACE 2>/dev/null | grep "inet " | awk '{ print $2 }')"
   #DOMAIN="`ipconfig getpacket en0 | grep 'domain_name (string)' | awk '{ print $3 }'`"
   DOMAIN="$(hostname | cut -d\. -f2-7)"
   MTIME60m="-mtime -60m"
@@ -419,8 +419,6 @@ FILE4="$PREFIX"/ip4.txt
 FILE6="$PREFIX"/ip6.txt
 # FILE_LISTEN stores current LISTEN-connections. Generated every 2 minutes
 FILE_LISTEN="$PREFIX"/listen.txt
-# CHECKSUM stores a sha1 checksum for the lsof-binary. Checked every 2 houres
-CHECKSUM="$PREFIX"/lsof_checksum.txt
 # IP_LOCATE_CACHE is a temporary file that stores the geo location of the external address
 IP_LOCATE_CACHE="$PREFIX"/ip_locate_cache.txt
 # Empty file whose existence signals that the launchd-part of open_ports is NOT running
@@ -552,25 +550,6 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     fi
   fi
 
-  # Checksum check of the "lsof"-command:
-  # (the checksum file is created at install time)
-  # If checksum file;
-  if [ -f "$CHECKSUM" ]; then
-    # If checksum file is older than two houres; 
-    # Check to see if the checksum of the "losof" command is the same as the stored checksum for "lsof"
-    if [ -z "$(find $CHECKSUM -type f ${MTIME120m} 2> /dev/null)" ]; then
-      # If NOT the same: create the STOP-file
-      if [ ! "$(openssl sha1 $LSOF_PATH/lsof | awk '{ print $2 }')" = "$(less $CHECKSUM)"  ]; then
-        touch "$PREFIX"/STOP
-      else
-        /bin/rm -f "$PREFIX"/STOP 2> /dev/null
-      fi
-    fi
-  else
-    # No checksum file found: create it
-    echo "$(openssl sha1 $LSOF_PATH/lsof | awk '{ print $2 }')" > "$CHECKSUM"
-    /bin/rm -f "$PREFIX"/STOP 2> /dev/null
-  fi
 
   # Create data for ESTABLISHED:
   # Previous capture line. Still here for reference:
@@ -690,17 +669,6 @@ fi
 # ----------------------------------------------------------------------------------------------------
 #
 # Print warnings if something is not right
-
-# Start to check if the file $PREFIX/STOP exists -- if so, "lsof" has been changed and everything must stop!!
-if [ -f "$PREFIX"/STOP ]; then
- printf "${ESC}${RedBack};${WhiteFont}mWARNING: \"lsof\" has been changed! You may have been hacked!!!\nLook carefully into this!!!\n$Reset"
- printf "${ESC}${RedBack};${WhiteFont}mLook carefully into this!!!\n$Reset"
- echo
- printf "${ESC}${RedBack};${WhiteFont}mIf you have recently upgraded your system, this is probably the cause.\n$Reset"
- printf "${ESC}${RedBack};${WhiteFont}mIn that case, simply remove the file $CHECKSUM.\n$Reset"
- [[ "$OS" = "Darwin" ]] && say "Warning: l s o f has been changed. You may have been hacked"
- exit 0
-fi
 
 # Check if there is any data file: warn the user and quit otherwise
 if [ ! -f "$FILE4" ]; then
