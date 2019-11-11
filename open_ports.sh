@@ -36,7 +36,7 @@
 # 2015-09-16  Moved to GitHub (finally!)
 #
 # Version:
-VER="2.7.2"
+VER="2.7.3"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -378,7 +378,7 @@ if [ "$OS" = "Darwin" ]; then
   # GeoLookupDir is a dir where the geo lookup is stored
   GeoLookupDir="/Library/cs.lth.se/GeoLookup"
   #DEFAULT_INTERFACE="$(route get www.lu.se | grep interface | awk '{ print $2 }')"
-  DEFAULT_INTERFACE="$(/usr/sbin/netstat -f inet -rn | grep "^default" | head -1 | awk '{print $6}')"
+  DEFAULT_INTERFACE="$(/usr/sbin/netstat -f inet -rn | grep "^default" | head -1 | awk '{print $NF}')"
   MY_IP_ADDRESS="$(ifconfig $DEFAULT_INTERFACE 2>/dev/null | grep "inet " | awk '{ print $2 }')"
   #DOMAIN="`ipconfig getpacket en0 | grep 'domain_name (string)' | awk '{ print $3 }'`"
   DOMAIN="$(hostname | cut -d\. -f2-7)"
