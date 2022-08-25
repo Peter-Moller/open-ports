@@ -34,9 +34,10 @@
 # 2013-04-23  Fixed garbage in the $IP_CACHE-file
 # 2014-03-01  Implemented a new IP-lookup system using http://db-ip.com/ (Thank you, guys!)
 # 2015-09-16  Moved to GitHub (finally!)
+# 2021-01-26  Removed the update functionality. Everything now goes via git
 #
 # Version:
-VER="2.7.3"
+VER="3.5"
 #
 # Note: The script is dependant on two external web-addresses:
 # 1. http://api.db-ip.com/addrinfo?addr=8.9.10.11&api_key=123456789123456789
@@ -109,15 +110,15 @@ function PerformGeoLookup ()
         City="$(echo $Rad | cut -d\" -f 16)"
         Country="$(grep "$(echo $Rad | cut -d\" -f 8)" $CountryList | cut -d: -f2)"
       else
-        City="look up"
-        Country="Could not"
+        City="???"
+        Country="???"
       fi
       # Write to file
       echo "$City:$Country" > "$GeoLookupDir/${IP_to_check}.txt"
       [ "$debug" = "t" ] && echo "$(date +%F" "%T); #95; $$; User=\"$USER\"; PerformGeoLookup (IP=\"$IP\", IP_to_check=\"$IP_to_check\", City=\"$City\", Country=\"$Country\")" >> $IP_loggfile
     else
-      City="look up"
-      Country="Could not"
+      City="???"
+      Country="???"
     fi
   fi
 }
@@ -135,7 +136,8 @@ function GetCityCountry()
   #  IP="$(echo $IP | cut -d: -f1)"
   #fi
   if [ -r "$GeoLookupDir/${IP}.txt" ]; then
-    City="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f1 | native2ascii -encoding UTF-8 -reverse)"
+    #City="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f1 | native2ascii -encoding UTF-8 -reverse)"
+    City="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f1)"
     Country="$(less "$GeoLookupDir/${IP}.txt" | cut -d: -f2)"
     # FUTURE FEATURE: INCREASE COUNTER
     [ "$debug" = "t" ] && echo "$(date +%F" "%T); #135; $$; User=\"$USER\"; GetCityCountry ($IP, City=\"$City\", Country=\"$Country\")" >> $IP_loggfile
@@ -232,103 +234,15 @@ esac
 done
 
 
-# Check for update
-# We come here when the script is older than 7 days 
-# or
-# from the function “UpdateScript”
-# 
-# If no new update is available, the script is touched (to postpone any new check for a week)
-CheckForUpdate() {
-  NewScriptAvailable=f
-  # First, download the script from the server
-  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName" "$OpenPortsURL"/"$ScriptName" 2>/dev/null
-  curl -s -f -e "$ScriptName ver:$VER" -o /tmp/"$ScriptName".sha1 "$OpenPortsURL"/"$ScriptName".sha1 2>/dev/null
-  ERR=$?
-  if [ "$ERR" -ne 0 ] ; then
-    case "$ERR" in
-      6) echo "Error: unable to resolve host";;
-      7) echo "Error: unable to connect to host";;
-      22) echo "Error fetching http-page (error code 4nn or 5nn)";;
-    esac
-    echo "The file \"$ScriptName\" could not be fetched from \"$OpenPortsURL/$ScriptName\""
-    UpdateMessage="{ESC}${BlackBack};${RedFont}mCould not check for new version of \"$ScriptName\" (network error)\n\n"
-    #echo "Exiting! Fix yourself..."
-    #exit 1
-  fi
-  # Compare the checksum of the script with the fetched sha1-sum
-  # If they diff, there is a new script available
-  # If not, touch the script to make it not check again in 2 minutes!
-  if [ "$(openssl sha1 /tmp/"$ScriptName" | awk '{ print $2 }')" = "$(less /tmp/"$ScriptName".sha1)" ]; then
-    if [ -n "$(diff /tmp/$ScriptName $BINDIR/$ScriptName 2> /dev/null)" ] ; then
-      NewScriptAvailable=t
-      UpdateMessage="${ESC}${BlackBack};${RedFont}mUpdate to $ScriptName available! (update with: \"$ScriptName -u\" as root)${Reset}\n\n"
-    else
-      touch $BINDIR/$ScriptName 2>/dev/null
-    fi
-  else
-    CheckSumError=t
-    UpdateMessage="${ESC}${BlackBack};${RedFont}mUpdate check of $ScriptName: checksum-check failed!${Reset}\n\n"
-  fi
-  }
-
-
-# Update [and quit]
-# We come here on a direct request
-# If there is no newer script, the present one is touched so that the next check is done in a week from now
-UpdateScript() {
-  CheckForUpdate
-  if [ "$CheckSumError" = "t" ]; then
-    echo "Checksum of the fetched \"$ScriptName\" does NOT check out. Look into this! No update performed!"
-    exit 1
-  fi
-  if [ "$NewScriptAvailable" = "t" ]; then
-    /bin/rm -f $BINDIR/"$ScriptName" 2> /dev/null
-    /bin/mv /tmp/"$ScriptName" $BINDIR/"$ScriptName"
-    chmod 755 $BINDIR/"$ScriptName"
-    echo "A new version of \"$ScriptName\" was installed successfully!"
-    echo "Script updated. Exiting"
-    # Make an entry into the log book
-    echo "$(date): \"open_ports.sh\" upgraded" >> "$OP_LOGG"
-
-    # Send a signal that someone has updated the script
-    # This is only to give me feedback that someone is actually using this. I will *not* use the data in any way nor give it away or sell it!
-    curl -s -f -e "$ScriptName ver:$VER" -o /dev/null "$OpenPortsURL"/updated 2>/dev/null
-    
-    # Also, fix moving the script to /usr/local/bin
-    if [ "TIMER_METHOD" = "launchd" ]; then
-      if [ -n "$(grep "/usr/bin/open_ports.sh" /Library/LaunchDaemons/se.lth.cs.open_ports.plist 2>/dev/null)" ]; then
-        # Edit the plist-file
-        sed -e 's;/usr/bin/;/usr/local/bin/;' -i .bak /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-        # Stop and restart the launchd job
-        /bin/launchctl unload /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-        /bin/launchctl load /Library/LaunchDaemons/se.lth.cs.open_ports.plist
-      fi
-    # Also do this on Linux
-    elif [ "$TIMER_METHOD" = "cron" ]; then
-      crontab -l | grep -v "open_ports.sh" > /tmp/CRONFILE
-      echo "*/2 * * * * $BINDIR/open_ports.sh" >> /tmp/CRONFILE
-      crontab < /tmp/CRONFILE
-    elif [ "$TIMER_METHOD" = "systemd" ]; then
-      systemctl daemon-reload
-      systemctl restart open-ports.timer
-    fi
-
-    exit 0
-  else
-    echo "You already have the latest version of \"$ScriptName\"!"
-    touch $BINDIR/$ScriptName
-    exit 0
-  fi
-  }
-
-
 # Get, and print, IP-addresses for all active interfaces based on $NetworkInterfaces
 # This is, as yet, Mac-only
 function PrintAllInterfaces()
 {
-  NSOfile="/tmp/NetworkServiceOrder_$$.txt"
-  networksetup -listnetworkserviceorder  | grep -A 1 "^([0-9])\ " | grep "[a-z][0-9])$" | cut -d: -f2,3 | sed -e 's/, Device//g' -e 's/)//g' -e 's/^ //g' > $NSOfile
-  NetworkInterfaces="$(less $NSOfile | cut -d: -f2)"
+  #NSOfile="/tmp/NetworkServiceOrder_$$.txt"
+  #networksetup -listnetworkserviceorder  | grep -A 1 "^([0-9])\ " | grep "[a-z][0-9])$" | cut -d: -f2,3 | sed -e 's/, Device//g' -e 's/)//g' -e 's/^ //g' > $NSOfile
+  NSO="$(networksetup -listnetworkserviceorder  | grep -A 1 "^([0-9])\ " | grep "[a-z][0-9])$" | cut -d: -f2,3 | sed -e 's/, Device//g' -e 's/)//g' -e 's/^ //g')"
+  #NetworkInterfaces="$(less $NSOfile | cut -d: -f2)"
+  NetworkInterfaces="$(echo "$NSO" | cut -d: -f2)"
   # Ex: NetworkInterfaces=' en0 en1 en5 en2 bridge0'
   #echo "Available network interfaces: $NetworkInterfaces"
   FormatStringInterfaces="%-25s%-5s%-17s%-26s"
@@ -350,21 +264,21 @@ function PrintAllInterfaces()
       if [ $? -eq 0 ]; then
         Active="$(echo $IF | egrep -o "status: [a-z0-9][^\ ]*" | awk '{print $2}')"
         if [ -z "${Active/active/}" ]; then
-          IFName="$(grep $j $NSOfile | cut -d: -f1)"
+          IFName="$(echo "$NSO" | grep $j | cut -d: -f1)"
           # Ex: IFName='Ethernet 2'
-          I4="$IFName ($j): $(echo $IF | egrep -o "inet\ [a-z0-9][^\ ]*" | awk '{print $2}')"
-           # Ex: I4='Ethernet 2 (en1): 192.168.1.69'
-          I6="$IFName ($j): $(echo $IF | egrep -o "inet6\ [a-z0-9][^\ ]*" | awk '{print $2}' | egrep -o "[^%]*")"
-          # Ex: I6='Ethernet 2 (en1): fe80::217:f2ff:fe04:4229'
-          # Without the last part, it will be: I6='Ethernet 2 (en1): fe80::217:f2ff:fe04:4229%en1'
-          printf "${ESC}${WhiteBack};${BlackFont}m${FormatStringInterfaces}${Reset}\n" "${IfNum}. ${IFName}" "$j" "$(echo $IF | egrep -o "inet\ [a-z0-9][^\ ]*" | awk '{print $2}')" "$(echo $IF | egrep -o "inet6\ [a-z0-9][^\ ]*" | awk '{print $2}' | egrep -o "[^%]*")"
+          I4="$IFName ($j): $(echo $IF | egrep -o "inet\ [a-z0-9][^\ ]*" | awk '{print $2}')"                # Ex: I4='Ethernet 2 (en1): 192.168.1.69'
+          IP4_addr="$(echo $IF | egrep -o "inet\ [a-z0-9][^\ ]*" | awk '{print $2}')"                        # Ex: IP4_addr='192.168.50.201'
+          #I6="$IFName ($j): $(echo $IF | egrep -o "inet6\ [a-z0-9][^\ ]*" | awk '{print $2}' | egrep -o "[^%]*")"
+          I6="$IFName ($j): $(echo "$IF" | grep -Eo "^\s*inet6\ [a-z0-9:]*[^%]" | awk '{print $2}')"         # Ex: I6='Wi-Fi (en0): fe80::ced:c35a:6cbe:6ab1'
+          IP6_addr="$(echo "$IF" | grep -Eo "^\s*inet6\ [a-z0-9:]*[^%]" | awk '{print $2}')"                 # Ex: IP6_addr='fe80::ced:c35a:6cbe:6ab1'
+          printf "${ESC}${WhiteBack};${BlackFont}m${FormatStringInterfaces}${Reset}\n" "${IfNum}. ${IFName}" "$j" "$IP4_addr" "$IP6_addr"
           let IfNum=( $IfNum + 1 )
         fi
       fi
     done
   fi
   # Clean up the $NSOfile
-  /bin/rm "$NSOfile" 2>/dev/null
+  #/bin/rm "$NSOfile" 2>/dev/null
 }
 
 
@@ -426,8 +340,8 @@ LAUNCHD_FLAG="$PREFIX"/no_launchd
 # SoftwareUpdate-fil (temporary)
 SoftUpd=/tmp/swu.temp
 # String for printf (used to print ESTABLISHED-connections)
-Formatstring1="%-22s%-14s%-15s%2s%3s%-58s%-20s%-14s"
-Formatstring2="%-22s%-14s%-15s%2s%3s%-58s"
+Formatstring1="%-24s%-14s%-15s%2s%3s%-58s%-20s%-14s"
+Formatstring2="%-24s%-14s%-15s%2s%3s%-58s"
 # String for printf (used to print LISTEN-ports)
 FormatstringListen="%-6s%-6s%-18s%-15s%6s%2s%-17s%-15s"
 # UpdateMessage contains the message of weather an update is available och the checksum-check failed
@@ -489,18 +403,6 @@ if [ "$USER" = "root" -o -z "$USER" ]; then
     exit 1
   fi
 
-  # If this is an update run("open_ports.sh -u" and thus fetch_new=t), update!
-  if [ "$fetch_new" = "t" ]; then
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #446; $$; UpdateScript" >> $IP_loggfile
-    UpdateScript
-  fi
-
-  # If the script is too old, check for update
-  # Question 2015-09-18: why is this here at all? This check is also performed in the user section below! /Peter Möller
-  if [ -z "$(find $BINDIR/open_ports.sh -type f ${MTIME7d} 2> /dev/null)" ]; then
-    [ "$debug" = "t" ] && echo "$(date +%F" "%T); #453; $$; CheckForUpdate" >> $IP_loggfile
-    CheckForUpdate
-  fi
 
   printf "Generating datafiles..."
 
@@ -658,16 +560,17 @@ fi
 # Everything below is run by the user
 
 
-# If the script is too old, check for update
+# Clean the GeoLocate cache for old entries every 7 days
 if [ -z "$(find $BINDIR/open_ports.sh -type f ${MTIME7d} 2> /dev/null)" ]; then
-  CheckForUpdate
-  # Also, clean the GeoLocate cache for old entries
   CleanGeoLocate
+  # touch the script so we come to this part of the script ever again
+  touch "$BINDIR/$ScriptName" 2>/dev/null
 fi
 
 
 # ----------------------------------------------------------------------------------------------------
 #
+
 # Print warnings if something is not right
 
 # Check if there is any data file: warn the user and quit otherwise
@@ -820,7 +723,7 @@ do
   [[ "$OS" = "Linux" ]] && DATE=$(ls -ls --time-style=+%Y-%m-%d\ %H:%M $(dirname "$FILE4"/ip"$i".txt) | awk '{ print $7" "$8 }')
   printf "${ESC}${BoldFace}mEstablished IPv$i-connections:$Reset ($DATE)    $(if [ "$i" = "4" ]; then printf "${ESC}${ItalicFace}m(Explanation: Normal$Reset, ${ESC}${GreenFont};${ItalicFace}mSafe protocol$Reset, ${ESC}${CyanFont};${ItalicFace}mAmbiguous DNS$Reset, ${ESC}${RedFont};${ItalicFace}mNo DNS-name$Reset, ${ESC}${RedBack};${WhiteFont};${ItalicFace}mUser is root$Reset${ESC}${ItalicFace}m)$Reset"; fi)\n"
   if [ "$IPv6" = "f" -a "$i" -eq 6 ]; then
-    printf "${ESC}${ItalicFace};${YellowFont}mIPv6 is not configured$Reset"
+    printf "${ESC}${ItalicFace};${YellowFont}mIPv6 is not configured for interface \"${DEFAULT_INTERFACE}\"$Reset"
   else
     echo
     # Print different headers if $PREFIX/$GeoLookupKey exist or not
@@ -841,7 +744,11 @@ do
         FontColor="$RES"
 
         # lsof +c 0 replaces " " in application names with "x20"; change back!
-        PROGR=`echo $PROGRAM | sed 's/x20/\ /g'`
+        PROGRAM="$(echo $PROGRAM | sed 's/x20/\ /g')"
+        # If the text is too wide, shorten it
+        if [ $(echo $PROGRAM | wc -c) -gt 23 ]; then
+          PROGRAM="$(echo $PROGRAM | sed 's/x20/\ /g' | cut -c -20)..."
+        fi
 
         # Find out the hostname for $IP. Cut of the trailing dot
         # Gives: $HOSTNAME
@@ -907,9 +814,9 @@ do
         fi
         # Print the line!
         if [ -n "$GeoLookupKey" ]; then
-          printf "${ESC}${Face};${BGColor};${FontColor}m$Formatstring1$Reset\n" "$PROGR" "$PORT" "$USERR" "$COUNT" "   " "${HOSTNAME//.$DOMAIN}" "$Country" "$City"
+          printf "${ESC}${Face};${BGColor};${FontColor}m$Formatstring1$Reset\n" "$PROGRAM" "$PORT" "$USERR" "$COUNT" "   " "${HOSTNAME//.$DOMAIN}" "$Country" "$City"
         else
-          printf "${ESC}${Face};${BGColor};${FontColor}m$Formatstring2$Reset\n" "$PROGR" "$PORT" "$USERR" "$COUNT" "   " "${HOSTNAME//.$DOMAIN}"
+          printf "${ESC}${Face};${BGColor};${FontColor}m$Formatstring2$Reset\n" "$PROGRAM" "$PORT" "$USERR" "$COUNT" "   " "${HOSTNAME//.$DOMAIN}"
         fi
      done
    else
@@ -946,9 +853,15 @@ do
   Face="$RES"
   FontColor="$RES"
 
-  PROGR=`echo $PROGRAM | sed 's/x20/\ /g'`
+  # lsof +c 0 replaces " " in application names with "x20"; change back!
+  PROGRAM="$(echo $PROGRAM | sed 's/x20/\ /g')"
+  # If the text is too wide, shorten it
+  if [ $(echo $PROGRAM | wc -c) -gt 16 ]; then
+    PROGRAM="$(echo $PROGRAM | sed 's/x20/\ /g' | cut -c -15)..."
+  fi
+  #PROGR=`echo $PROGRAM | sed 's/x20/\ /g'`
   # If the lines are the same: do nothing more than to set both 4 and 6 when it is to be printed the next turn around
-  if [[ "$LastProgram" = "$PROGR" && "$LastUser" = "$USERR" && "$LastPort" = "$PORT" && "$LastRange" = "$RANGE" ]]; then
+  if [[ "$LastProgram" = "$PROGRAM" && "$LastUser" = "$USERR" && "$LastPort" = "$PORT" && "$LastRange" = "$RANGE" ]]; then
     export LastIPv4="4"
     export LastIPv6="6"
   else
@@ -972,7 +885,7 @@ do
     LastIPv4="$IPv4"
     LastIPv6="$IPv6"
   fi
-  LastProgram="$PROGR"
+  LastProgram="$PROGRAM"
   LastUser="$USERR"
   LastPort="$PORT"
   LastRange="$RANGE"
