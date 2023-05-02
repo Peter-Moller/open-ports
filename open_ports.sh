@@ -628,7 +628,7 @@ fi
 # On Mac OS X, use the command "sw_vers"
 # On linux, use the command "lsb_release" if available, otherwise use the file "/etc/issue"
 if [ "$OS" = "Darwin" ]; then
-  SW_VERS="$(sw_vers | grep ProductName | cut -d: -f2 | tr -d "\t") $(sw_vers | grep ProductVersion | awk '{print $2}')"
+  SW_VERS="$(sw_vers | grep ProductName | cut -d: -f2 | tr -d "\t") $(sw_vers | grep ProductVersion | awk '{print $2}' | tr '\n' ' ')"
   # Find out if it's a server
   # First step: does the name fromsw_vers include "server"?
   if [ -z "$(echo "$SW_VERS" | grep -i server)" ]; then
